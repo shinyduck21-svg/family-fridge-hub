@@ -23,7 +23,8 @@ export default function Dashboard() {
   const [familyData, setFamilyData] = useState<any>(null);
   const [ingredients, setIngredients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showForm, setShowForm] = useState(false); // 폼 표시 여부
+  const [editingIngredient, setEditingIngredient] = useState<any>(null); // 수정 중인 재료
 
   // 푸시 알림 토큰 등록
   useEffect(() => {
@@ -39,7 +40,6 @@ export default function Dashboard() {
       if (!user) return;
       
       try {
-        // 1. 유저 정보에서 familyId 가져오기
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
         
@@ -47,14 +47,12 @@ export default function Dashboard() {
           const familyId = userSnap.data().familyId;
           
           if (familyId) {
-            // 2. 가족 정보 가져오기
             const familyRef = doc(db, "families", familyId);
             const familySnap = await getDoc(familyRef);
             if (familySnap.exists()) {
               setFamilyData(familySnap.data());
             }
 
-            // 3. 재료 목록 실시간 리스너 설정
             const q = query(
               collection(db, "ingredients"),
               where("familyId", "==", familyId),
@@ -92,6 +90,18 @@ export default function Dashboard() {
     };
   }, [user]);
 
+  // 수정 폼 열기
+  const handleEditIngredient = (ingredient: any) => {
+    setEditingIngredient(ingredient);
+    setShowForm(true);
+  };
+
+  // 폼 닫기
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingIngredient(null);
+  };
+
   // 초대 코드 복사 기능
   const copyInviteCode = () => {
     if (familyData?.inviteCode) {
@@ -111,7 +121,7 @@ export default function Dashboard() {
       {/* 상단 네비게이션 */}
       <header className="bg-white shadow px-4 py-3 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg text-white">
+          <div className="bg-blue-600 p-2 rounded-lg text-white font-bold">
             <LayoutDashboard size={20} />
           </div>
           <h1 className="text-xl font-bold text-gray-800">
@@ -121,14 +131,14 @@ export default function Dashboard() {
         <div className="flex items-center gap-2">
           <button 
             onClick={copyInviteCode}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             title="초대 코드 공유"
           >
             <Share2 size={20} />
           </button>
           <button 
             onClick={logOut}
-            className="p-2 text-gray-400 hover:bg-gray-100 rounded-full"
+            className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors"
             title="로그아웃"
           >
             <LogOut size={20} />
@@ -138,8 +148,7 @@ export default function Dashboard() {
 
       {/* 메인 콘텐츠 */}
       <main className="p-4 flex-1 max-w-2xl mx-auto w-full">
-        {/* 현황 대시보드 카드 */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white mb-4 shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white mb-6 shadow-xl relative overflow-hidden">
           <div className="relative z-10">
             <h2 className="text-2xl font-bold leading-snug">안녕하세요, <br />{user?.displayName}님! 👋</h2>
             <div className="mt-4 flex items-center gap-4 text-white/80">
@@ -158,30 +167,34 @@ export default function Dashboard() {
 
         {/* 재료 리스트 섹션 */}
         <div className="space-y-4">
-          <div className="flex justify-between items-end">
+          <div className="flex justify-between items-end mb-2">
             <h3 className="text-lg font-bold text-gray-800">지금 냉장고에 있는 재료</h3>
             <span className="text-sm text-gray-400 font-medium">{ingredients.length}개 보관 중</span>
           </div>
-          <IngredientList ingredients={ingredients} loading={loading} />
+          <IngredientList 
+            ingredients={ingredients} 
+            onEdit={handleEditIngredient} 
+          />
         </div>
       </main>
 
       {/* 하단 유동 추가 버튼 */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20">
         <button
-          onClick={() => setShowAddForm(true)}
-          className="bg-blue-600 text-white flex items-center gap-2 px-6 py-4 rounded-full shadow-2xl hover:bg-blue-700 hover:scale-105 transition-all text-lg font-bold"
+          onClick={() => setShowForm(true)}
+          className="bg-blue-600 text-white flex items-center gap-2 px-8 py-4 rounded-full shadow-2xl hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all text-lg font-bold"
         >
           <Plus size={24} />
           재료 추가
         </button>
       </div>
 
-      {/* 재료 추가 폼 모달 */}
-      {showAddForm && (
+      {/* 재료 추가/수정 폼 모달 */}
+      {showForm && (
         <IngredientForm 
           familyId={familyData?.familyId} 
-          onClose={() => setShowAddForm(false)} 
+          onClose={closeForm}
+          initialData={editingIngredient}
         />
       )}
     </div>
