@@ -1,65 +1,99 @@
-import Image from "next/image";
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import FamilySetup from "@/components/FamilySetup";
+import Dashboard from "@/components/Dashboard";
+import { Loader2, Refrigerator } from "lucide-react";
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+  const { user, loading, signInWithGoogle } = useAuth();
+  const [hasFamily, setHasFamily] = useState<boolean | null>(null);
+  const [checkingFamily, setCheckingFamily] = useState(true);
+
+  // 1. 로그인한 유저의 가족 유무 확인
+  useEffect(() => {
+    const checkUserFamily = async () => {
+      if (!user) {
+        setCheckingFamily(false);
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const familyId = userSnap.data().familyId;
+          setHasFamily(!!familyId);
+        } else {
+          setHasFamily(false);
+        }
+      } catch (err) {
+        console.error(err);
+        setHasFamily(false);
+      } finally {
+        setCheckingFamily(false);
+      }
+    };
+
+    checkUserFamily();
+  }, [user]);
+
+  // 2. 로딩 상태 처리
+  if (loading || (user && checkingFamily)) {
+    return (
+      <div className="flex h-screen items-center justify-center gap-2">
+        <Loader2 className="animate-spin text-blue-500" />
+        <span className="font-medium">불러오는 중...</span>
+      </div>
+    );
+  }
+
+  // 3. 로그인 전: 랜딩 페이지
+  if (!user) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+        <div className="text-center space-y-6 max-w-lg">
+          <div className="flex justify-center">
+            <div className="p-4 bg-white rounded-3xl shadow-xl">
+              <Refrigerator size={64} className="text-blue-600" />
+            </div>
+          </div>
+          
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
+            Family Fridge Hub
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg text-gray-600 leading-relaxed">
+            우리 가족 냉장고 속 식재료, <br />
+            이제 실시간으로 공유하고 AI로 식단 추천까지 받아보세요!
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+          <div className="pt-8">
+            <button
+              onClick={signInWithGoogle}
+              className="px-8 py-4 bg-white text-gray-800 font-bold rounded-2xl shadow-lg border border-gray-100 flex items-center gap-3 mx-auto hover:bg-gray-50 transition-all hover:scale-105"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
+              Google로 시작하기
+            </button>
+          </div>
         </div>
       </main>
-    </div>
-  );
+    );
+  }
+
+  // 4. 로그인 후 가족이 없는 경우: 가족 설정 로직
+  if (!hasFamily) {
+    return (
+      <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
+        <FamilySetup />
+      </main>
+    );
+  }
+
+  // 5. 로그인 후 가족이 있는 경우: 대시보드
+  return <Dashboard />;
 }
