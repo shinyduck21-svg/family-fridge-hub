@@ -33,7 +33,7 @@ export default function BarcodeScanner({ onScanSuccess, onClose }: BarcodeScanne
 
     const startScanner = async () => {
       try {
-        const html5QrCode = new Html5Qrcode(scannerId, { formatsToSupport });
+        const html5QrCode = new Html5Qrcode(scannerId, { formatsToSupport, verbose: false });
         scannerRef.current = html5QrCode;
 
         await html5QrCode.start(
