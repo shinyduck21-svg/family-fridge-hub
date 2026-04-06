@@ -16,7 +16,9 @@ import { LogOut, RefreshCcw, LayoutDashboard, Plus, Share2, Bell } from "lucide-
 import IngredientForm from "./IngredientForm";
 import IngredientList from "./IngredientList";
 import MealRecommendation from "./MealRecommendation";
+import ReceiptScanner from "./ReceiptScanner"; 
 import { requestForToken } from "@/lib/fcm";
+import { Camera } from "lucide-react"; 
 
 export default function Dashboard() {
   const { user, logOut } = useAuth();
@@ -24,6 +26,7 @@ export default function Dashboard() {
   const [ingredients, setIngredients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false); // 폼 표시 여부
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false); // 영수증 스캐너 표시 여부
   const [editingIngredient, setEditingIngredient] = useState<any>(null); // 수정 중인 재료
 
   // 푸시 알림 토큰 등록
@@ -178,8 +181,15 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* 하단 유동 추가 버튼 */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20">
+      {/* 하단 유동 버튼 영역 */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+        <button
+          onClick={() => setShowReceiptScanner(true)}
+          className="bg-white text-blue-600 flex items-center justify-center w-14 h-14 rounded-full shadow-2xl hover:bg-blue-50 border border-blue-100 transition-all"
+          title="영수증 스캔"
+        >
+          <Camera size={24} />
+        </button>
         <button
           onClick={() => setShowForm(true)}
           className="bg-blue-600 text-white flex items-center gap-2 px-8 py-4 rounded-full shadow-2xl hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all text-lg font-bold"
@@ -188,6 +198,14 @@ export default function Dashboard() {
           재료 추가
         </button>
       </div>
+
+      {/* 영수증 스캐너 모달 */}
+      {showReceiptScanner && (
+        <ReceiptScanner 
+          familyId={familyData?.familyId} 
+          onClose={() => setShowReceiptScanner(false)} 
+        />
+      )}
 
       {/* 재료 추가/수정 폼 모달 */}
       {showForm && (
