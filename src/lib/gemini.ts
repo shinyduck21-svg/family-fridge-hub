@@ -1,8 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || "");
-// 사용자님의 쿼터 리스트에 있는 최신 모델명을 사용합니다.
-const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
 
 export interface RecipeResult {
   name: string;
@@ -21,6 +19,13 @@ export async function getMealRecommendations(ingredients: any[]): Promise<Recipe
   if (!ingredients || ingredients.length === 0) {
     throw new Error("냉장고에 재료가 없습니다.");
   }
+  
+  // 환경변수 체크 로그
+  if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
+    console.error("Gemini API Key가 설정되지 않았습니다.");
+  }
+
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const ingredientText = ingredients
     .map((ing) => {
@@ -76,7 +81,7 @@ export async function getMealRecommendations(ingredients: any[]): Promise<Recipe
  */
 export const analyzeReceipt = async (imageFile: File) => {
   try {
-    // 비전 기능은 1.5 Flash 계열 모델이 가장 안정적이므로 해당 모델을 사용합니다.
+    console.log("영수증 분석 시작: ", imageFile.name, imageFile.type);
     const visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const imageBase64 = await new Promise<string>((resolve) => {
@@ -94,7 +99,7 @@ export const analyzeReceipt = async (imageFile: File) => {
       3. 카테고리는 다음 중 하나로 지정: vegetable, fruit, meat, seafood, dairy, grain, condiment, etc.
       
       [응답 형식]:
-      JSON 배열 형식으로만 응답해줘. 예:
+      JSON 배열 형식으로만 응답해줘. 다른 텍스트는 포함하지 마. 예:
       [
         {"name": "품목명", "category": "dairy", "quantity": 1, "unit": "개"}
       ]
@@ -112,11 +117,20 @@ export const analyzeReceipt = async (imageFile: File) => {
 
     const response = await result.response;
     const text = response.text();
+    console.log("AI 분석 결과 원본:", text);
     
+    // JSON 배열 부분만 정교하게 추출
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    return jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    if (!jsonMatch) {
+      console.warn("JSON 형식을 찾을 수 없음");
+      return [];
+    }
+
+    const items = JSON.parse(jsonMatch[0]);
+    console.log("파싱된 아이템 리스트:", items);
+    return items;
   } catch (error) {
-    console.error("영수증 분석 오류:", error);
+    console.error("영수증 분석 상세 오류:", error);
     throw error;
   }
 };

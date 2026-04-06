@@ -29,9 +29,10 @@ export default function ReceiptScanner({ familyId, onClose }: ReceiptScannerProp
       const items = await analyzeReceipt(file);
       // 각 아이템에 고유 ID(로컬용) 부여
       setAnalyzedItems(items.map((item: any, idx: number) => ({ ...item, id: Date.now() + idx })));
-    } catch (err) {
+    } catch (err: any) {
       console.error("영수증 분석 오류:", err);
-      alert("영수증을 분석하지 못했습니다. 다시 시도해 주세요.");
+      const errorMessage = err?.message || "알 수 없는 오류";
+      alert(`영수증을 분석하지 못했습니다.\n원인: ${errorMessage}`);
     } finally {
       setIsAnalyzing(false);
     }
