@@ -17,8 +17,9 @@ import IngredientForm from "./IngredientForm";
 import IngredientList from "./IngredientList";
 import MealRecommendation from "./MealRecommendation";
 import ReceiptScanner from "./ReceiptScanner"; 
+import ConsumedHistory from "./ConsumedHistory"; // 새 컴포넌트 추가
 import { requestForToken } from "@/lib/fcm";
-import { Camera } from "lucide-react"; 
+import { Camera, History as HistoryIcon } from "lucide-react"; 
 
 export default function Dashboard() {
   const { user, logOut } = useAuth();
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false); // 폼 표시 여부
   const [showReceiptScanner, setShowReceiptScanner] = useState(false); // 영수증 스캐너 표시 여부
+  const [showHistory, setShowHistory] = useState(false); // 소비 히스토리 표시 여부
   const [editingIngredient, setEditingIngredient] = useState<any>(null); // 수정 중인 재료
 
   // 푸시 알림 토큰 등록
@@ -133,6 +135,13 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <button 
+            onClick={() => setShowHistory(true)}
+            className="p-2 text-orange-500 hover:bg-orange-50 rounded-full transition-colors"
+            title="소비 히스토리 기록"
+          >
+            <HistoryIcon size={22} />
+          </button>
+          <button 
             onClick={copyInviteCode}
             className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
             title="초대 코드 공유"
@@ -204,6 +213,14 @@ export default function Dashboard() {
         <ReceiptScanner 
           familyId={familyData?.familyId} 
           onClose={() => setShowReceiptScanner(false)} 
+        />
+      )}
+
+      {/* 소비 히스토리 모달 */}
+      {showHistory && (
+        <ConsumedHistory 
+          familyId={familyData?.familyId} 
+          onClose={() => setShowHistory(false)} 
         />
       )}
 
