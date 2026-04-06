@@ -2,6 +2,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || "");
 
+// 사용자님의 최신 모델로 원상복구합니다.
+const MODEL_NAME = "gemini-3.1-flash-lite-preview";
+
 export interface RecipeResult {
   name: string;
   description: string;
@@ -20,12 +23,11 @@ export async function getMealRecommendations(ingredients: any[]): Promise<Recipe
     throw new Error("냉장고에 재료가 없습니다.");
   }
   
-  // 환경변수 체크 로그
   if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
     console.error("Gemini API Key가 설정되지 않았습니다.");
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   const ingredientText = ingredients
     .map((ing) => {
@@ -81,8 +83,8 @@ export async function getMealRecommendations(ingredients: any[]): Promise<Recipe
  */
 export const analyzeReceipt = async (imageFile: File) => {
   try {
-    console.log("영수증 분석 시작: ", imageFile.name, imageFile.type);
-    const visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    console.log("영수증 분석 시작 (모델: " + MODEL_NAME + "): ", imageFile.name);
+    const visionModel = genAI.getGenerativeModel({ model: MODEL_NAME });
 
     const imageBase64 = await new Promise<string>((resolve) => {
       const reader = new FileReader();
@@ -119,7 +121,6 @@ export const analyzeReceipt = async (imageFile: File) => {
     const text = response.text();
     console.log("AI 분석 결과 원본:", text);
     
-    // JSON 배열 부분만 정교하게 추출
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       console.warn("JSON 형식을 찾을 수 없음");
