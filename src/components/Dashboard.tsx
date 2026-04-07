@@ -17,7 +17,7 @@ import IngredientForm from "./IngredientForm";
 import IngredientList from "./IngredientList";
 import MealRecommendation from "./MealRecommendation";
 import ReceiptScanner from "./ReceiptScanner"; 
-import ConsumedHistory from "./ConsumedHistory"; // 새 컴포넌트 추가
+import ConsumedHistory from "./ConsumedHistory";
 import { requestForToken } from "@/lib/fcm";
 import { Camera, History as HistoryIcon } from "lucide-react"; 
 
